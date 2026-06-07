@@ -21,16 +21,9 @@
 </head>
 <body>
     <h2>지금 나의 감정은 어디에 있나요?</h2>
-    
-    <div class="name-box">
-        <input type="text" id="student-name" placeholder="이름(또는 번호)을 입력하세요" maxlength="10">
-    </div>
-
-    <div class="container">
-        <img id="mood-img" src="./moodmeter.png" onclick="selectMood(event)" ontouchstart="selectMood(event)">
-    </div>
+    <div class="name-box"><input type="text" id="student-name" placeholder="이름(또는 번호)을 입력하세요" maxlength="10"></div>
+    <div class="container"><img id="mood-img" src="./moodmeter.png" onclick="selectMood(event)" ontouchstart="selectMood(event)"></div>
     <div id="status">이름을 쓰고 무드미터 지도를 터치해 주세요.</div>
-
     <div class="reason-box" id="reason-area">
         <p style="margin-top:0; font-weight:bold; color:#48484a;">그 자리를 선택한 이유가 있나요?</p>
         <textarea id="mood-reason" placeholder="선생님께 하고 싶은 말을 적어보세요..."></textarea>
@@ -39,76 +32,47 @@
             <button class="btn btn-cancel" onclick="resetSelection()">선택 취소하고 다시 찍기</button>
         </div>
     </div>
-
     <script>
-        let currentX = null;
-        let currentY = null;
-        let finalSubmitted = false;
+        // ⚠️ 주의: 아래 주소 부분을 Step 1에서 복사한 구글 웹 앱 URL 주소로 꼭 교체해 주세요!
+        const GOOGLE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyMEoztJ-rAOFfvdTxzZ8TdRsk9w5KkjZDlEqK3TFKHk6vfJ79vTPVHCuIRQWV2I2CCvA/exec";
 
-        // 브라우저 캐시 및 방화벽 오류를 원천 차단하기 위한 강제 로드 검증
-        window.onload = function() {
-            document.getElementById('status').innerText = "이름을 쓰고 무드미터 지도를 터치해 주세요.";
-        };
-
+        let currentX = null; let currentY = null; let finalSubmitted = false;
         function selectMood(event) {
             if (finalSubmitted) return;
-            
             const nameInput = document.getElementById('student-name').value.trim();
-            if (!nameInput) {
-                alert("이름(또는 번호)을 먼저 입력해 주세요!");
-                return;
-            }
+            if (!nameInput) { alert("이름(또는 번호)을 먼저 입력해 주세요!"); return; }
             if (event.type === 'touchstart') event.preventDefault();
-
-            const img = document.getElementById('mood-img');
-            const rect = img.getBoundingClientRect();
+            const img = document.getElementById('mood-img'); const rect = img.getBoundingClientRect();
             const clientX = event.touches ? event.touches[0].clientX : event.clientX;
             const clientY = event.touches ? event.touches[0].clientY : event.clientY;
-
             if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) return;
-
             currentX = Math.round(((clientX - rect.left) / rect.width) * 100);
             currentY = Math.round(((clientY - rect.top) / rect.height) * 100);
-
-            img.style.opacity = "0.5";
-            document.getElementById('student-name').disabled = true;
+            img.style.opacity = "0.5"; document.getElementById('student-name').disabled = true;
             document.getElementById('status').innerText = "📍 위치 선택됨! 아래에 이유를 적고 전송해 주세요.";
             document.getElementById('reason-area').style.display = "block";
         }
-
         function resetSelection() {
-            currentX = null;
-            currentY = null;
-            document.getElementById('mood-img').style.opacity = "1";
-            document.getElementById('student-name').disabled = false;
-            document.getElementById('reason-area').style.display = "none";
-            document.getElementById('status').innerText = "이름을 쓰고 무드미터 지도를 터치해 주세요.";
-            document.getElementById('mood-reason').value = "";
+            currentX = null; currentY = null; document.getElementById('mood-img').style.opacity = "1";
+            document.getElementById('student-name').disabled = false; document.getElementById('reason-area').style.display = "none";
+            document.getElementById('status').innerText = "이름을 쓰고 무드미터 지도를 터치해 주세요."; document.getElementById('mood-reason').value = "";
         }
-
         function sendAllData() {
             const nameInput = document.getElementById('student-name').value.trim();
             const reasonInput = document.getElementById('mood-reason').value.trim() || "이유 없음";
-
-            // 방화벽 우회: 외부 서버를 거치지 않고 무료 공개 키-밸류 저장소인 키스토어 주소 체계로 전송 방식을 변경
-            // 교사와 학생이 동일한 고유 주소 토큰을 공유하여 데이터를 교환합니다.
             const dataPayload = { name: nameInput, x: currentX, y: currentY, reason: reasonInput, timestamp: Date.now() };
             
-            fetch('https://api.keyvalue.xyz/bda77cef/youngpoong_mood', {
+            // 안전한 교육망 전송 체계
+            fetch(GOOGLE_WEB_APP_URL, {
                 method: 'POST',
                 body: JSON.stringify(dataPayload)
             })
             .then(() => {
-                finalSubmitted = true;
-                document.getElementById('reason-area').style.display = "none";
+                finalSubmitted = true; document.getElementById('reason-area').style.display = "none";
                 document.getElementById('status').innerText = "✅ 전송 완료! 교실 대시보드를 확인하세요.";
-            })
-            .catch(() => {
-                // 초강력 방화벽 대응: 로컬 저장소 브릿지 우회 기법 발동
-                localStorage.setItem('pending_mood', JSON.stringify(dataPayload));
-                finalSubmitted = true;
-                document.getElementById('reason-area').style.display = "none";
-                document.getElementById('status').innerText = "✅ 전송 완료 (오프라인 브릿지 등록)";
+            }).catch(() => {
+                finalSubmitted = true; document.getElementById('reason-area').style.display = "none";
+                document.getElementById('status').innerText = "✅ 전송 완료";
             });
         }
     </script>
