@@ -7,10 +7,18 @@
     <style>
         body { text-align: center; font-family: -apple-system, sans-serif; background: #f2f2f7; margin: 0; padding: 20px; user-select: none; }
         .name-box { margin: 15px auto; padding: 15px; max-width: 470px; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .name-box input { padding: 10px; font-size: 16px; width: 70%; border: 1px solid #ccc; border-radius: 8px; text-align: center; }
+        .name-box input { padding: 10px; font-size: 16px; width: 80%; border: 1px solid #ccc; border-radius: 8px; text-align: center; }
         .container { position: relative; display: inline-block; margin-top: 10px; max-width: 100%; }
         #mood-img { width: 100%; max-width: 500px; height: auto; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer; -webkit-user-drag: none; }
-        #status { margin-top: 20px; font-weight: bold; color: #007aff; font-size: 1.1rem; }
+        #status { margin-top: 15px; font-weight: bold; color: #007aff; font-size: 1.1rem; }
+        
+        /* 추가된 서브 입력창 스타일 */
+        .reason-box { display: none; margin: 15px auto; padding: 15px; max-width: 470px; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); text-align: center; }
+        .reason-box textarea { width: 90%; height: 60px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; resize: none; }
+        .btn-group { margin-top: 10px; }
+        .btn { padding: 10px 20px; font-size: 14px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; margin: 0 5px; }
+        .btn-submit { background-color: #34c759; color: white; }
+        .btn-cancel { background-color: #ff3b30; color: white; }
     </style>
 </head>
 <body>
@@ -21,23 +29,30 @@
     </div>
 
     <div class="container">
-        <img id="mood-img" src="./moodmeter.png" onclick="submitMood(event)" ontouchstart="submitMood(event)">
+        <img id="mood-img" src="./moodmeter.png" onclick="selectMood(event)" ontouchstart="selectMood(event)">
     </div>
-    <div id="status">이름을 쓰고 무드미터 지도를 터치하면 제출됩니다.</div>
+    <div id="status">이름을 쓰고 무드미터 지도를 터치해 주세요.</div>
+
+    <div class="reason-box" id="reason-area">
+        <p style="margin-top:0; font-weight:bold; color:#48484a;">그 자리를 선택한 이유가 있나요? (선택사항)</p>
+        <textarea id="mood-reason" placeholder="선생님께 하고 싶은 말을 적어보세요..."></textarea>
+        <div class="btn-group">
+            <button class="btn btn-submit" onclick="sendAllData()">정식 전송하기</button>
+            <button class="btn btn-cancel" onclick="resetSelection()">선택 취소하고 다시 찍기</button>
+        </div>
+    </div>
 
     <script>
-        let submitted = false;
+        let currentX = null;
+        let currentY = null;
+        let finalSubmitted = false;
 
-        function submitMood(event) {
-            const nameInput = document.getElementById('student-name').value.trim();
+        function selectMood(event) {
+            if (finalSubmitted) return;
             
-            // 이름 입력 검증
+            const nameInput = document.getElementById('student-name').value.trim();
             if (!nameInput) {
                 alert("이름(또는 번호)을 먼저 입력해 주세요!");
-                return;
-            }
-            if (submitted) {
-                alert("이미 감정을 제출했습니다!");
                 return;
             }
             if (event.type === 'touchstart') event.preventDefault();
@@ -49,24 +64,20 @@
 
             if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) return;
 
-            const x = Math.round(((clientX - rect.left) / rect.width) * 100);
-            const y = Math.round(((clientY - rect.top) / rect.height) * 100);
+            // 임시 좌표 저장
+            currentX = Math.round(((clientX - rect.left) / rect.width) * 100);
+            currentY = Math.round(((clientY - rect.top) / rect.height) * 100);
 
-            // 이름(name) 데이터까지 포함해서 전송
-            fetch('https://ntfy.sh/school_mood_board_youngpoong', {
-                method: 'POST',
-                body: JSON.stringify({ name: nameInput, x: x, y: y })
-            })
-            .then(() => {
-                submitted = true;
-                document.getElementById('status').innerText = "✅ " + nameInput + "님의 감정이 성공적으로 전송되었습니다!";
-                document.getElementById('mood-img').style.opacity = "0.6";
-                document.getElementById('student-name').disabled = true;
-            }).catch(() => {
-                submitted = true;
-                document.getElementById('status').innerText = "✅ 전송 완료";
-            });
+            // UI 변경
+            img.style.opacity = "0.5";
+            document.getElementById('student-name').disabled = true;
+            document.getElementById('status').innerText = "📍 위치가 선택되었습니다! 아래에 이유를 적고 전송해 주세요.";
+            document.getElementById('reason-area').style.display = "block";
         }
-    </script>
-</body>
-</html>
+
+        // [선택 취소] 버튼 활성화 함수
+        function resetSelection() {
+            currentX = null;
+            currentY = null;
+            document.getElementById('mood-img').style.opacity = "1";
+            document.getElementById('student-name').disabled = false;
