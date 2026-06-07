@@ -7,7 +7,23 @@
         body { text-align: center; font-family: sans-serif; background: #f0f2f5; padding: 20px; }
         .container { position: relative; display: inline-block; margin-top: 10px; }
         #mood-img { height: 75vh; width: auto; max-width: 100%; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
-        .dot { position: absolute; width: 16px; height: 16px; background: rgba(255,255,255,0.9); border: 3px solid #000; border-radius: 50%; transform: translate(-50%, -50%); animation: pop 0.3s ease-out; }
+        
+        /* 점 대신 이름표 스타일로 변경 */
+        .name-tag { 
+            position: absolute; 
+            padding: 4px 8px;
+            background: rgba(255, 255, 255, 0.95); 
+            color: #1c1c1e;
+            font-size: 13px;
+            font-weight: bold;
+            border: 2px solid #333; 
+            border-radius: 6px; 
+            transform: translate(-50%, -50%); 
+            animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            white-space: nowrap;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        
         @keyframes pop { 0% { transform: translate(-50%, -50%) scale(0); } 100% { transform: translate(-50%, -50%) scale(1); } }
         .btn-clear { margin-top: 15px; padding: 10px 25px; background: #ff3b30; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; }
     </style>
@@ -23,12 +39,14 @@
     <script>
         const container = document.getElementById('canvas-container');
 
-        function drawDot(point) {
-            const dot = document.createElement('div');
-            dot.className = 'dot';
-            dot.style.left = point.x + '%';
-            dot.style.top = point.y + '%';
-            container.appendChild(dot);
+        // 이름표를 그려주는 함수로 업그레이드
+        function drawNameTag(point) {
+            const tag = document.createElement('div');
+            tag.className = 'name-tag';
+            tag.style.left = point.x + '%';
+            tag.style.top = point.y + '%';
+            tag.innerText = point.name; // 학생 이름 입력
+            container.appendChild(tag);
         }
 
         const eventSource = new EventSource('https://ntfy.sh/school_mood_board_youngpoong/sse');
@@ -37,19 +55,19 @@
             try {
                 const rawData = JSON.parse(e.data);
                 const point = JSON.parse(rawData.message);
-                if (point.x && point.y) {
-                    drawDot(point);
+                if (point.x && point.y && point.name) {
+                    drawNameTag(point);
                 }
             } catch (err) {
                 if (e.data.includes("CLEAR_SIGNAL")) {
-                    document.querySelectorAll('.dot').forEach(d => d.remove());
+                    document.querySelectorAll('.name-tag').forEach(t => t.remove());
                 }
             }
         };
 
         function clearData() {
             if(confirm("우리 반 감정 데이터를 모두 초기화하시겠습니까?")) {
-                document.querySelectorAll('.dot').forEach(d => d.remove());
+                document.querySelectorAll('.name-tag').forEach(t => t.remove());
                 fetch('https://ntfy.sh/school_mood_board_youngpoong', {
                     method: 'POST',
                     body: 'CLEAR_SIGNAL'
