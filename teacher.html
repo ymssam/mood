@@ -15,7 +15,7 @@
 <body>
     <h1>📊 우리 반 실시간 감정 날씨</h1>
     <div class="container" id="canvas-container">
-        <img id="mood-img" src="https://images.squarespace-cdn.com/content/v1/594186522cba5e56e047ebfc/1603831826071-GCO5NAE7B8KID5UPJ8I4/Mood+Meter.png">
+        <img id="mood-img" src="./moodmeter.png">
     </div>
     <br>
     <button class="btn-clear" onclick="clearData()">🔄 감정 보드 리셋</button>
@@ -31,7 +31,6 @@
             container.appendChild(dot);
         }
 
-        // 가입 없는 초간단 실시간 구독 서비스 연동 (ntfy.sh)
         const eventSource = new EventSource('https://ntfy.sh/school_mood_board_youngpoong/sse');
         
         eventSource.onmessage = (e) => {
@@ -42,7 +41,6 @@
                     drawDot(point);
                 }
             } catch (err) {
-                // 리셋 신호 처리
                 if (e.data.includes("CLEAR_SIGNAL")) {
                     document.querySelectorAll('.dot').forEach(d => d.remove());
                 }
